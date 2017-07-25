@@ -1,10 +1,17 @@
 package sg.edu.rp.c347.knowyourfacts;
 
+import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -12,6 +19,7 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
@@ -20,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
     MyFragmentPagerAdapter adapter;
     ViewPager vPager;
     Button btnLater;
+    int reqCode = 123;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,6 +37,18 @@ public class MainActivity extends AppCompatActivity {
 
         btnLater = (Button)findViewById(R. id. btnLater);
         vPager = (ViewPager)findViewById(R. id. viewpager1);
+
+        btnLater.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+                SharedPreferences.Editor prefEdit = prefs.edit();
+                int previousPage = vPager.getCurrentItem();
+                prefEdit.putString("pageNo", String.valueOf(previousPage));
+                Log.d("pageNo",String.valueOf(previousPage));
+                prefEdit.commit();
+            }
+        });
 
         FragmentManager fm = getSupportFragmentManager();
 
@@ -40,7 +61,30 @@ public class MainActivity extends AppCompatActivity {
 
         vPager.setAdapter(adapter);
 
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.SECOND, 5);
 
+        Intent intent = new Intent(MainActivity.this,
+                MyReceiver.class);
+
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                MainActivity.this, reqCode,
+                intent, PendingIntent.FLAG_CANCEL_CURRENT);
+
+        AlarmManager am = (AlarmManager)
+                getSystemService(Activity.ALARM_SERVICE);
+        am.set(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(),
+                pendingIntent);
+
+
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        String pageNo = prefs.getString("pageNo","0");
+        vPager.setCurrentItem(Integer.parseInt(pageNo), true);
     }
 
     public boolean onCreateOptionsMenu(Menu menu) {
